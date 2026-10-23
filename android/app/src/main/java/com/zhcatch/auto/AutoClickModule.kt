@@ -70,16 +70,29 @@ class AutoClickModule(private val ctx: ReactApplicationContext) :
         }
     }
 
+    /**
+     * 判断本应用的无障碍服务是否已启用。
+     * 注意 HyperOS/MIUI 会把设置项里的组件名改写成短格式
+     * （如 com.pkg/.auto.Service），因此只按包名匹配，不做全串比对。
+     */
     private fun isAccessibilityOn(): Boolean {
-        val expected = "${ctx.packageName}/${ClickAccessibilityService::class.java.name}"
         val enabled = Settings.Secure.getString(
             ctx.contentResolver,
             Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
         ) ?: return false
         val splitter = TextUtils.SimpleStringSplitter(':')
         splitter.setString(enabled)
+        val pkg = ctx.packageName
         while (splitter.hasNext()) {
-            if (splitter.next().equals(expected, ignoreCase = true)) {
+            val entry = splitter.next().trim()
+            if (entry.isEmpty()) {
+                continue
+            }
+            val slash = entry.indexOf('/')
+            if (slash <= 0) {
+                continue
+            }
+            if (entry.substring(0, slash).equals(pkg, ignoreCase = true)) {
                 return true
             }
         }
