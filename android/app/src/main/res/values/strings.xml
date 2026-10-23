@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">智点连点器</string>
+    <string name="accessibility_service_description">用于在你指定的屏幕位置按设定频率自动点击。开启后，本服务会在你按"开始"时向屏幕注入点击手势，不读取任何界面内容。</string>
+    <string name="accessibility_service_summary">在指定坐标注入点击手势</string>
+</resources>

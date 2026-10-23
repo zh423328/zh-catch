@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  连点注入服务配置。
+  canPerformGestures=true 是 dispatchGesture 注入点击的前提；
+  不声明任何窗口内容读取能力（canRetrieveWindowContent=false），
+  因为本应用只做坐标点击，不读取界面内容。
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeWindowStateChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagDefault"
+    android:canPerformGestures="true"
+    android:canRetrieveWindowContent="false"
+    android:description="@string/accessibility_service_description"
+    android:notificationTimeout="100"
+    android:settingsActivity="com.zhcatch.MainActivity"
+    android:summary="@string/accessibility_service_summary" />
