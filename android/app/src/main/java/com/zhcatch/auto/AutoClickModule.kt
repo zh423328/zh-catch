@@ -39,16 +39,29 @@ class AutoClickModule(private val ctx: ReactApplicationContext) :
 
     @ReactMethod
     fun isAccessibilityEnabled(promise: Promise) {
-        promise.resolve(isAccessibilityOn() || AutoClickEngine.serviceConnected())
+        promise.resolve(accessibilityReady())
     }
 
     @ReactMethod
     fun openAccessibilitySettings() {
         try {
-            val i = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            ctx.startActivity(i)
+            // 优先跳本服务的详情页（用户直接点开关即可）；
+            // 小米部分系统版本不支持该深链，落到通用无障碍列表页兜底
+            val deep = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+            deep.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            val bundle = android.os.Bundle().apply {
+                putString(":settings:fragment_args_key", ctx.packageName)
+                putInt(":settings:show_fragment_args_key", 1)
+            }
+            deep.putExtra(":settings:show_fragment_args", bundle)
+            ctx.startActivity(deep)
         } catch (_: Exception) {
+            try {
+                val fallback = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                ctx.startActivity(fallback)
+            } catch (_: Exception) {
+            }
         }
     }
 
@@ -98,6 +111,14 @@ class AutoClickModule(private val ctx: ReactApplicationContext) :
         }
         return false
     }
+
+    /**
+     * 服务「可用」的最终判定：设置项已开启 **且** 服务实例已绑定。
+     * 只有设置项而服务没绑定（系统杀进程后未恢复）时，点击注入是无效的，
+     * 必须让用户去系统设置里重新开启。
+     */
+    private fun accessibilityReady(): Boolean =
+        isAccessibilityOn() && AutoClickEngine.service != null
 
     // ------------------------------------------------------------ 悬浮层
 
@@ -225,7 +246,7 @@ class AutoClickModule(private val ctx: ReactApplicationContext) :
     @ReactMethod
     fun start(promise: Promise) {
         try {
-            val enabled = isAccessibilityOn() || AutoClickEngine.serviceConnected()
+            val enabled = accessibilityReady()
             if (!enabled || !AutoClickEngine.hasMarkers()) {
                 promise.resolve(false)
                 return
@@ -277,7 +298,7 @@ class AutoClickModule(private val ctx: ReactApplicationContext) :
             putDouble("tapCount", AutoClickEngine.tapCount.toDouble())
             putDouble("markerCount", AutoClickEngine.markers.size.toDouble())
             putArray("markers", markers)
-            putBoolean("accessibility", isAccessibilityOn() || AutoClickEngine.serviceConnected())
+            putBoolean("accessibility", accessibilityReady())
             putBoolean("overlayPermitted", Settings.canDrawOverlays(ctx))
             putBoolean("floatingVisible", AutoClickEngine.floatingVisible)
             putBoolean("markersVisible", AutoClickEngine.markersVisible)
